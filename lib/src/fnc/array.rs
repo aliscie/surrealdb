@@ -51,6 +51,39 @@ pub fn flatten((arg,): (Value,)) -> Result<Value, Error> {
 	})
 }
 
+pub fn insert(args: Vec<Value>) -> Result<Value, Error> {
+	if args.len() < 2 {
+		return Err(Error::InvalidArguments {
+			name: String::from("array::insert"),
+			message: String::from("Expected at least two argument"),
+		});
+	}
+	let mut args = args.into_iter();
+	let array = args.next().unwrap();
+	let data = args.next().unwrap();
+	let index = args.next().unwrap_or(Value::None);
+	match (array, index) {
+		(Value::Array(mut v), Value::Number(index)) => {
+			let mut index = index.as_int();
+			if index < 0 {
+				// negative index means start from the back
+				index += v.len() as i64;
+			}
+			if index > v.len() as i64 || index < 0 {
+				// invalid index returning array as it is
+				return Ok(v.into());
+			}
+			v.insert(index as usize, data);
+			Ok(v.into())
+		}
+		(Value::Array(mut v), Value::None) => {
+			v.push(data);
+			Ok(v.into())
+		}
+		(_, _) => Ok(Value::None),
+	}
+}
+
 pub fn intersect(arrays: (Value, Value)) -> Result<Value, Error> {
 	Ok(match arrays {
 		(Value::Array(v), Value::Array(w)) => v.intersect(w).into(),
